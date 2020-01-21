@@ -13,28 +13,42 @@ from torch.autograd import Variable
 import math
 import torch.distributions as tdist
 import time
-import logging
+import os
 
 from made import MADE
-from utils import loss_gaussian, check_path
-import os
+from utils import loss_gaussian, check_path, plot_loss
+import logging
+import setproctitle
+
 # os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
 
 # ------------------------------------------------------------------------------
 
+# path settings
+# my machine
+path_base = '/media/yu/data/yu/code/gp_whittle/WhittleNetwork/'
+if not os.path.exists(path_base):
+    # dgx1 machine
+    path_base = "/dataset/whittle_data/"
+
 
 def run_epoch(split, upto=None):
+    proc_name = "Yu-MADE:%d:%d-mnist-lr%.8f" % (epoch, args.epoch, args.learning_rate)
+    setproctitle.setproctitle(proc_name)
     torch.set_grad_enabled(split=='train')  # enable/disable grad for efficiency of forwarding test batches
     model.train() if split == 'train' else model.eval()
     nsamples = 1 if split == 'train' else args.samples
     if split == 'train':
         x = xtr
+        log_label = 'train'
     elif split == 'test':
         x = xte
+        log_label = 'test '
     else:
         x = xod
+        log_label = 'ood  '
     N,D = x.size()
-    B = 128  # batch size
+    B = args.batch_size  # batch size
     nsteps = N//B if upto is None else min(N//B, upto)
     lossfs = []
     for step in range(nsteps):
@@ -53,17 +67,8 @@ def run_epoch(split, upto=None):
             xbhat += model(xb)
         xbhat /= nsamples
 
-        # view as numpy array
-        # tt = xbhat.detach().cpu().numpy()
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.imshow(tt[0, :].reshape(28, 28))
-        # plt.show()
-        
         # evaluate the binary cross entropy loss
         # loss = F.binary_cross_entropy_with_logits(xbhat, xb, size_average=False) / B
-        if step==208:
-            print("ggg")
         loss = loss_gaussian(xbhat, xb) / B
         lossf = loss.data.item()
         if np.isnan(lossf):
@@ -75,30 +80,31 @@ def run_epoch(split, upto=None):
             opt.zero_grad()
             loss.backward()
             opt.step()
-    if epoch % 5==0:
-        print("%s epoch average loss: %f" % (split, np.mean(lossfs)))
-    if epoch == 300:
-        log_msg = str(np.mean(lossfs))
+    if epoch % 10 == 0:
+        log_msg = "%s epoch %d average loss: %f" % (log_label, epoch, np.mean(lossfs))
+        print(log_msg)
         logger.info(log_msg)
-    #     print('200')
-# ------------------------------------------------------------------------------
+
+    return np.mean(lossfs)
 
 
-def init_log(ARGS):
+def init_log(args):
+    import time
     current_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
     # Creating log file
     save_path = './mnist/'
     check_path(save_path)
-    # path_base = '/media/yu/data/yu/code/gp_whittle/WhittleNetwork/dev/'
-    file_base = 'made_' + str(ARGS.hiddens) + '_on_mnist_'
+    file = save_path + 'q_' + args.hiddens + '_n_' + str(args.num_masks) + \
+           '_lr_' + str(args.learning_rate) + '_wd_' + str(args.weight_decay) + \
+           '_b_' + str(args.batch_size) + '_' + current_time
     logging.basicConfig(
-        filename=save_path + file_base + current_time + '.log',
+        filename=file + '.log',
         filemode='w',
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
 
-    return logger
+    return logger, file
 
 
 # ------------------------------------------------------------------------------
@@ -111,6 +117,10 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num-masks', type=int, default=1, help="Number of orderings for order/connection-agnostic training")
     parser.add_argument('-r', '--resample-every', type=int, default=20, help="For efficiency we can choose to resample orders/masks only once every this many steps")
     parser.add_argument('-s', '--samples', type=int, default=1, help="How many samples of connectivity/masks to average logits over during inference")
+    parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4,help="Learning rate")
+    parser.add_argument('-wd', '--weight-decay', type=float, default=1e-5, help="Weight decay")
+    parser.add_argument('-b', '--batch-size', type=int, default=32, help="Batch size")
+    parser.add_argument('-ep', '--epoch', type=int, default=20, help="number of epochs")
     args = parser.parse_args()
     # --------------------------------------------------------------------------
     
@@ -120,25 +130,21 @@ if __name__ == '__main__':
     torch.cuda.manual_seed_all(42)
 
     # init logger
-    logger = init_log(args)
+    logger, file_name = init_log(args)
+    log_msg = '\n--hiddens=' + str(args.hiddens) + \
+              '\n--num-masks=' + str(args.num_masks) + \
+              '\n--learning-rate=' + str(args.learning_rate) + \
+              '\n--weight-decay=' + str(args.weight_decay) + \
+              '\n--batch-size=' + str(args.batch_size)
+    print(log_msg)
+    logger.info(log_msg)
 
     # load the dataset
-    # print("loading binarized mnist from", args.data_path)
-    # mnist = np.load(args.data_path)
-    # xtr, xte = mnist['train_data'], mnist['valid_data']
-    # from mlxtend.data import loadlocal_mnist
-    # xtr, _ = loadlocal_mnist(
-    #     images_path='/media/yu/data/yu/dataset/mnist/train-images-idx3-ubyte',
-    #     labels_path='/media/yu/data/yu/dataset/mnist/train-labels-idx1-ubyte')
-    # xte, _ = loadlocal_mnist(
-    #     images_path='/media/yu/data/yu/dataset/mnist/t10k-images-idx3-ubyte',
-    #     labels_path='/media/yu/data/yu/dataset/mnist/t10k-labels-idx1-ubyte')
-
-    data_train = np.fromfile('/media/yu/data/yu/code/gp_whittle/WhittleNetwork/train_mnist.dat',
+    data_train = np.fromfile(path_base + 'train_mnist.dat',
                              dtype=np.float64).reshape(-1, 224)
-    data_pos = np.fromfile('/media/yu/data/yu/code/gp_whittle/WhittleNetwork/test_mnist_positive.dat',
+    data_pos = np.fromfile(path_base + 'test_mnist_positive.dat',
                            dtype=np.float64).reshape(-1, 224)
-    data_neg = np.fromfile('/media/yu/data/yu/code/gp_whittle/WhittleNetwork/test_mnist_negative.dat',
+    data_neg = np.fromfile(path_base + 'test_mnist_negative.dat',
                            dtype=np.float64).reshape(-1, 224)
     n_RV = 224  # number of RVs
     scope_list = np.arange(n_RV)
@@ -156,29 +162,25 @@ if __name__ == '__main__':
     # construct model and ship to GPU
     hidden_list = list(map(int, args.hiddens.split(',')))
     model = MADE(xtr.size(1), hidden_list, xtr.size(1)*2, num_masks=args.num_masks)
-    print("number of model parameters:",sum([np.prod(p.size()) for p in model.parameters()]))
+    print("number of model parameters:", sum([np.prod(p.size()) for p in model.parameters()]))
     model.cuda()
 
-    for step_size in [1e-5]:
-        for decay in [1e-5]:
+    # set up the optimizer
+    opt = torch.optim.Adam(model.parameters(), args.learning_rate, weight_decay=args.weight_decay)
+    scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=45, gamma=0.1)
 
-            # set up the optimizer
-            # opt = torch.optim.Adam(model.parameters(), 1e-4, weight_decay=1e-5)
-            opt = torch.optim.Adam(model.parameters(), step_size, weight_decay=decay)
-            scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=45, gamma=0.1)
+    # list to store loss
+    loss_tr = []
+    loss_te = []
+    loss_od = []
+    # start the training
+    for epoch in range(args.epoch):
+        scheduler.step(epoch)
+        loss_tr.append(run_epoch('train'))
+        loss_te.append(run_epoch('test'))  # run validation, which is pos
+        loss_od.append(run_epoch('ood'))  # run test, which is ood
 
-            log_msg = 'step size = ' + str(step_size) + ', decay = ' + str(decay)
-            logger.info(log_msg)
-
-            # start the training
-            for epoch in range(301):
-                if epoch%10==0:
-                    print("epoch %d" % (epoch, ))
-                scheduler.step(epoch)
-                run_epoch('train')
-                run_epoch('test')  # run validation, which is pos
-                run_epoch('ood')  # run test, which is ood
-
-            print("optimization done. full test set eval:")
-            # run_epoch('test')
+    print("optimization done")
+    plot_loss(file_name, loss_tr, loss_te, loss_od)
+    # run_epoch('test')
 
