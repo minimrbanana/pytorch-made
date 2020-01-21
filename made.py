@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 # ------------------------------------------------------------------------------
 
+
 class MaskedLinear(nn.Linear):
     """ same as Linear except has a configurable mask on the weights """
     
@@ -23,6 +24,7 @@ class MaskedLinear(nn.Linear):
         
     def forward(self, input):
         return F.linear(input, self.mask * self.weight, self.bias)
+
 
 class MADE(nn.Module):
     def __init__(self, nin, hidden_sizes, nout, num_masks=1, natural_ordering=False):
@@ -92,11 +94,17 @@ class MADE(nn.Module):
         layers = [l for l in self.net.modules() if isinstance(l, MaskedLinear)]
         for l,m in zip(layers, masks):
             l.set_mask(m)
+            # print(m)
     
     def forward(self, x):
-        return self.net(x)
+        n = x.shape[1]
+        y = self.net(x)
+        # add relu to std by zhongjie
+        # y = torch.cat([y[:, 0:n], torch.clamp(y[:, n:], min=0.0001)], 1)
+        return y
 
 # ------------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
     from torch.autograd import Variable
