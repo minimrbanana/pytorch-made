@@ -2,6 +2,7 @@ import torch
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 
 def loss_gaussian(out, x):
@@ -16,6 +17,9 @@ def loss_gaussian(out, x):
     ttt = loss.cpu().detach().numpy()
     if np.isnan(ttt):
         print('wait')
+        print('miu=', miu)
+        print('std=', std)
+        sys.exit()
     return loss
 
 

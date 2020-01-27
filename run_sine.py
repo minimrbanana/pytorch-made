@@ -150,7 +150,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data-path', default='/media/yu/data/yu/dataset/binary_mnist/binarized_mnist.npz',
                         type=str, help="Path to binarized_mnist.npz")
-    parser.add_argument('-q', '--hiddens', type=str, default='1000',
+    parser.add_argument('-q', '--hiddens', type=str, default='1000,1000,1000',
                         help="Comma separated sizes for hidden layers, e.g. 500, or 500,500")
     parser.add_argument('-n', '--num-masks', type=int, default=1,
                         help="Number of orderings for order/connection-agnostic training")
@@ -162,7 +162,7 @@ if __name__ == '__main__':
                         help="Learning rate")
     parser.add_argument('-wd', '--weight-decay', type=float, default=1e-5,
                         help="Weight decay")
-    parser.add_argument('-b', '--batch-size', type=int, default=128,
+    parser.add_argument('-b', '--batch-size', type=int, default=256,
                         help="Batch size")
     parser.add_argument('-ep', '--epoch', type=int, default=1000,
                         help="number of epochs")
