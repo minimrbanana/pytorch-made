@@ -117,10 +117,10 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num-masks', type=int, default=1, help="Number of orderings for order/connection-agnostic training")
     parser.add_argument('-r', '--resample-every', type=int, default=20, help="For efficiency we can choose to resample orders/masks only once every this many steps")
     parser.add_argument('-s', '--samples', type=int, default=1, help="How many samples of connectivity/masks to average logits over during inference")
-    parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4,help="Learning rate")
+    parser.add_argument('-lr', '--learning-rate', type=float, default=0.0002,help="Learning rate")
     parser.add_argument('-wd', '--weight-decay', type=float, default=1e-5, help="Weight decay")
-    parser.add_argument('-b', '--batch-size', type=int, default=32, help="Batch size")
-    parser.add_argument('-ep', '--epoch', type=int, default=20, help="number of epochs")
+    parser.add_argument('-b', '--batch-size', type=int, default=128, help="Batch size")
+    parser.add_argument('-ep', '--epoch', type=int, default=300, help="number of epochs")
     args = parser.parse_args()
     # --------------------------------------------------------------------------
     

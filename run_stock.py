@@ -118,13 +118,13 @@ if __name__ == '__main__':
                         help="For efficiency we can choose to resample orders/masks only once every this many steps")
     parser.add_argument('-s', '--samples', type=int, default=1,
                         help="How many samples of connectivity/masks to average logits over during inference")
-    parser.add_argument('-lr', '--learning-rate', type=float, default=1e-2,
+    parser.add_argument('-lr', '--learning-rate', type=float, default=0.03,
                         help="Learning rate")
     parser.add_argument('-wd', '--weight-decay', type=float, default=1e-5,
                         help="Weight decay")
-    parser.add_argument('-b', '--batch-size', type=int, default=4,
+    parser.add_argument('-b', '--batch-size', type=int, default=8,
                         help="Batch size")
-    parser.add_argument('-ep', '--epoch', type=int, default=1000,
+    parser.add_argument('-ep', '--epoch', type=int, default=300,
                         help="number of epochs")
     args = parser.parse_args()
     # --------------------------------------------------------------------------

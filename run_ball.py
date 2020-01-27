@@ -117,7 +117,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data-path', default='/media/yu/data/yu/dataset/binary_mnist/binarized_mnist.npz',
                         type=str, help="Path to binarized_mnist.npz")
-    parser.add_argument('-q', '--hiddens', type=str, default='1000',
+    parser.add_argument('-q', '--hiddens', type=str, default='1000,500,1000',
                         help="Comma separated sizes for hidden layers, e.g. 500, or 500,500")
     parser.add_argument('-n', '--num-masks', type=int, default=1,
                         help="Number of orderings for order/connection-agnostic training")
@@ -151,6 +151,7 @@ if __name__ == '__main__':
     print(log_msg)
     logger.info(log_msg)
 
+    """
     data_path = path_base + '/datasets/billiards_data/'
     # Load training data
     data = pickle.load(open(data_path + 'billiards_train_10000.pkl', 'rb'))
@@ -253,6 +254,26 @@ if __name__ == '__main__':
     scope_list_3 = scope_list_2 + 204
     scope_list = np.concatenate([scope_list_1, scope_list_2, scope_list_3])
     init_scope = list(scope_list)
+    """
+    data_train = np.genfromtxt(path_base + 'train_billiards.csv', delimiter=',')
+    data_pos = np.genfromtxt(path_base + 'test_billiards_positive.csv', delimiter=',')
+    data_neg = np.genfromtxt(path_base + 'test_billiards_negative.csv', delimiter=',')
+    n_RV = 612  # number of RVs
+    scope_list = np.arange(n_RV)
+    # 1. standard
+    scope_temp = np.delete(scope_list, np.where(scope_list % 102 == 51))
+    init_scope = list(np.delete(scope_temp, np.where(scope_temp % 102 == 101)))
+    # 2. removing high frequencies
+    # scope_list_x1r = np.arange(29)
+    # scope_list_x1i = np.arange(52, 81)
+    # scope_list_x1 = np.concatenate([scope_list_x1r, scope_list_x1i])
+    # scope_list_y1 = scope_list_x1 + 102
+    # scope_list_1 = np.concatenate([scope_list_x1, scope_list_y1])
+    # scope_list_2 = scope_list_1 + 204
+    # scope_list_3 = scope_list_2 + 204
+    # scope_list = np.concatenate([scope_list_1, scope_list_2, scope_list_3])
+    # init_scope = list(scope_list)
+
     # modify data to remove 0 (imag) columns
     data_train = data_train[:, init_scope]
     data_pos = data_pos[:, init_scope]
