@@ -133,8 +133,8 @@ if __name__ == '__main__':
                         help="Batch size")
     parser.add_argument('-ep', '--epoch', type=int, default=300,
                         help="number of epochs")
-    parser.add_argument('-f', '--frequency', type=int, default=50,
-                        help="number of frequencies to model, default 50, means all frequencies")
+    parser.add_argument('-f', '--frequency', type=int, default=51,
+                        help="number of frequencies to model, default 51, means all frequencies")
     args = parser.parse_args()
     # --------------------------------------------------------------------------
 
@@ -264,23 +264,26 @@ if __name__ == '__main__':
     ts_length = 100  # length of time series is 100, can be measured from raw data.
     ts_dim = 6          # dimension of multi-variate time series, can be measured from raw data.
     n_RV = (ts_length + 2) * ts_dim  # number of RVs, after rFFT
-    scope_list = np.arange(n_RV)
-    # 1. standard
-    # scope_temp = np.delete(scope_list, np.where(scope_list % 102 == 51))
-    # init_scope = list(np.delete(scope_temp, np.where(scope_temp % 102 == 101)))
-    # 2. removing high frequencies
-    freq = args.frequency
-    assert freq <= ts_length/2
 
-    scope_list_x1r = np.arange(freq)
-    scope_list_x1i = np.arange(ts_length/2+2, ts_length/2+2 + freq)
-    scope_list_x1 = np.concatenate([scope_list_x1r, scope_list_x1i])
-    scope_list_y1 = scope_list_x1 + ts_length+2
-    scope_list_1 = np.concatenate([scope_list_x1, scope_list_y1])
-    scope_list_2 = scope_list_1 + (ts_length+2)*2
-    scope_list_3 = scope_list_2 + (ts_length+2)*2
-    scope_list = np.concatenate([scope_list_1, scope_list_2, scope_list_3])
-    init_scope = list(scope_list.astype(int))
+    if args.frequency == 51:
+        # 1. standard, model all frequencies
+        scope_list = np.arange(n_RV)
+        scope_temp = np.delete(scope_list, np.where(scope_list % 102 == 51))
+        init_scope = list(np.delete(scope_temp, np.where(scope_temp % 102 == 101)))
+    else:
+        # 2. removing high frequencies, model the first "args.frequency" frequencies
+        freq = args.frequency
+        assert 2 <= freq <= ts_length/2
+
+        scope_list_x1r = np.arange(freq)
+        scope_list_x1i = np.arange(ts_length/2+2, ts_length/2+1 + freq)  # exclude the 0 freq in imag part
+        scope_list_x1 = np.concatenate([scope_list_x1r, scope_list_x1i])
+        scope_list_y1 = scope_list_x1 + ts_length+2
+        scope_list_1 = np.concatenate([scope_list_x1, scope_list_y1])
+        scope_list_2 = scope_list_1 + (ts_length+2)*2
+        scope_list_3 = scope_list_2 + (ts_length+2)*2
+        scope_list = np.concatenate([scope_list_1, scope_list_2, scope_list_3])
+        init_scope = list(scope_list.astype(int))
 
     # modify data to remove 0 (imag) columns
     data_train = data_train[:, init_scope]
