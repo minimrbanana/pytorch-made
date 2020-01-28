@@ -133,8 +133,8 @@ if __name__ == '__main__':
                         help="Batch size")
     parser.add_argument('-ep', '--epoch', type=int, default=300,
                         help="number of epochs")
-    parser.add_argument('-f', '--frequency', type=int, default=29,
-                        help="number of frequencies to model, default 51, means all frequencies")
+    parser.add_argument('-f', '--frequency', type=int, default=50,
+                        help="number of frequencies to model, default 50, means all frequencies")
     args = parser.parse_args()
     # --------------------------------------------------------------------------
 
@@ -149,7 +149,8 @@ if __name__ == '__main__':
               '\n--num-masks=' + str(args.num_masks) + \
               '\n--learning-rate=' + str(args.learning_rate) + \
               '\n--weight-decay=' + str(args.weight_decay) + \
-              '\n--batch-size=' + str(args.batch_size)
+              '\n--batch-size=' + str(args.batch_size) + \
+              '\n--frequency=' + str(args.frequency)
     print(log_msg)
     logger.info(log_msg)
 
@@ -269,6 +270,7 @@ if __name__ == '__main__':
     # init_scope = list(np.delete(scope_temp, np.where(scope_temp % 102 == 101)))
     # 2. removing high frequencies
     freq = args.frequency
+    assert freq <= ts_length/2
 
     scope_list_x1r = np.arange(freq)
     scope_list_x1i = np.arange(ts_length/2+2, ts_length/2+2 + freq)
