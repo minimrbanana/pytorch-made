@@ -120,7 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('-lr', '--learning-rate', type=float, default=0.0002,help="Learning rate")
     parser.add_argument('-wd', '--weight-decay', type=float, default=1e-5, help="Weight decay")
     parser.add_argument('-b', '--batch-size', type=int, default=128, help="Batch size")
-    parser.add_argument('-ep', '--epoch', type=int, default=300, help="number of epochs")
+    parser.add_argument('-ep', '--epoch', type=int, default=400, help="number of epochs")
     args = parser.parse_args()
     # --------------------------------------------------------------------------
     

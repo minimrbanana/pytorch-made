@@ -131,7 +131,7 @@ if __name__ == '__main__':
                         help="Weight decay")
     parser.add_argument('-b', '--batch-size', type=int, default=128,
                         help="Batch size")
-    parser.add_argument('-ep', '--epoch', type=int, default=300,
+    parser.add_argument('-ep', '--epoch', type=int, default=400,
                         help="number of epochs")
     parser.add_argument('-f', '--frequency', type=int, default=51,
                         help="number of frequencies to model, default 51, means all frequencies")

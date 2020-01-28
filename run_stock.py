@@ -124,7 +124,7 @@ if __name__ == '__main__':
                         help="Weight decay")
     parser.add_argument('-b', '--batch-size', type=int, default=8,
                         help="Batch size")
-    parser.add_argument('-ep', '--epoch', type=int, default=300,
+    parser.add_argument('-ep', '--epoch', type=int, default=400,
                         help="number of epochs")
     args = parser.parse_args()
     # --------------------------------------------------------------------------
